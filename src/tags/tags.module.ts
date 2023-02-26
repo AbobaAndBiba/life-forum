@@ -10,7 +10,13 @@ const tagsFeature = MongooseModule.forFeature([{ name: Tags.name, schema: TagsSc
 @Module({
   imports: [tagsFeature],
   controllers: [TagsController],
-  providers: [TagsService,TagsRepository],
-  exports: []
+  providers: [
+    TagsService,
+    TagsRepository
+  ],
+  exports: [
+    TagsService,
+    TagsRepository
+  ]
 })
 export class TagsModule {} 

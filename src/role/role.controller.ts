@@ -5,6 +5,7 @@ import { createRoleMapper } from "./mappers/create-role.mapper";
 import { updateRoleMapper } from "./mappers/update-role.mapper";
 import { RoleRepository } from "./role.repository";
 import { RoleService } from "./role.service";
+import { ObjectId } from "mongoose";
 
 @Controller("role")
 export class RoleController {
@@ -15,26 +16,26 @@ export class RoleController {
     ) {}
     
     @Get(":name")
-    async getRoleByName(@Param("name") roleName: string){
+    async getRoleByName(@Param("name") roleName: string): Promise<{id: ObjectId, name: string}>{
         return this.roleService.getRoleByName(roleName); 
     }
 
     @Post("/create")
-    async createRole(@Body() dto:CreateRoleDto){
+    async createRole(@Body() dto:CreateRoleDto): Promise<void>{
         dto = createRoleMapper.fromFrontToController(dto);
         const role = await this.roleRepository.getRoleByName(dto.name);
         if(role)
             throw new HttpException("Role with such name already exists",400);
-        return this.roleService.createRole(dto);
+        await this.roleService.createRole(dto);
     }
 
     @Get("/get/all")
-    async getRole(){
+    async getRole(): Promise<string[]>{
         return this.roleService.getAllRoles(); 
     }
 
     @Delete(":name")
-    async deleteRoleByName(@Param("name") roleName: string){
+    async deleteRoleByName(@Param("name") roleName: string): Promise<{message}>{
         const role = await this.roleRepository.getRoleByName(roleName);
         if(!role)
             throw new NotFoundException("Role was not found");
@@ -43,7 +44,7 @@ export class RoleController {
     }
 
     @Patch(":name")
-    async updateRoleByName(@Param("name") roleName: string ,@Body() dto:UpdateRoleDto){
+    async updateRoleByName(@Param("name") roleName: string, @Body() dto:UpdateRoleDto): Promise<{message}>{
         dto = updateRoleMapper.fromFrontToController(dto);
         const role = await this.roleRepository.getRoleByName(roleName);
         if(!role)

@@ -3,7 +3,6 @@ import {Document} from "mongoose";
 
 export type RoleDocument = Role & Document;
 
-
 @Schema()
 export class Role implements IRole {
     @Prop({ unique:true, required:true})

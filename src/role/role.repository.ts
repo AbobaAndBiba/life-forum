@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import {Model} from "mongoose";
+import {Model, ObjectId} from "mongoose";
 import { CreateRoleDto } from "./dto/create-role.dto";
 import { UpdateRoleDto } from "./dto/update-role.dto";
-import { IRole, Role, RoleDocument } from "./shemas/role.schemas";
+import { IRole, Role, RoleDocument } from "./schemas/role.schemas";
 
 @Injectable()
 export class RoleRepository {
@@ -19,7 +19,11 @@ export class RoleRepository {
         return this.role.find();
     }
 
-    async getRoleByName(roleName: string): Promise<IRole>{
+    async getRoleById(id: ObjectId): Promise<RoleDocument>{
+        return this.role.findOne({id});
+    }
+
+    async getRoleByName(roleName: string): Promise<RoleDocument>{
         return this.role.findOne({name: roleName});
     }
 

@@ -4,6 +4,7 @@ import {Model} from "mongoose";
 import { CreateTagDto } from "./dto/create-tag.dto";
 import { UpdateTagDto } from "./dto/update-tag.dto";
 import { ITags, Tags, TagsDocument } from "./schemas/tags.schema";
+import { IBulkWriteTag } from "src/theme/theme.interfaces";
 
 @Injectable()
 export class TagsRepository {
@@ -11,9 +12,13 @@ export class TagsRepository {
         @InjectModel(Tags.name) private readonly tags: Model<TagsDocument>
     ) {}
 
-    async createTag(data:CreateTagDto){
+    async createTag(data: CreateTagDto){
         return this.tags.create(data);
-    } 
+    }
+    
+    async createTagsByNames(names: IBulkWriteTag[]) {
+        return this.tags.bulkWrite(names);
+    }
 
     async getAllTags(): Promise<ITags[]>{
         return this.tags.find();
@@ -21,6 +26,14 @@ export class TagsRepository {
 
     async getTagByName(tagName: string): Promise<ITags>{
         return this.tags.findOne({name: tagName});
+    }
+
+    async getTagsByNames(names: string[]) {
+        return this.tags.find({
+            name: {
+                "$in": names
+            }
+        });
     }
 
     async deleteTagByName(tagName: string){

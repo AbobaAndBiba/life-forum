@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { CreateRoleDto } from "./dto/create-role.dto";
 import { UpdateRoleDto } from "./dto/update-role.dto";
 import { RoleRepository } from "./role.repository";
-
+import { ObjectId } from "mongoose";
 
 @Injectable()
 export class RoleService {
@@ -20,8 +20,14 @@ export class RoleService {
         } );
     }
 
-    async getRoleByName(roleName: string): Promise<string>{
-        return (await (this.roleRepository.getRoleByName(roleName))).name;
+    async getRoleByName(roleName: string): Promise<{id: ObjectId, name: string}> {
+        const role = await this.roleRepository.getRoleByName(roleName);
+        if(!role)
+            return null;
+        return {
+            id: role.id,
+            name: role.name
+        };
     }
 
     async deleteRoleByName(roleName: string){
