@@ -27,7 +27,7 @@ export class ThemeRepository {
         return this.theme.find().skip(offset).limit(limit);
     }
 
-    async getThemeById(id: string): Promise<ThemeDocument>{
+    async getThemeById(id: ObjectId): Promise<ThemeDocument>{
         return this.theme.findOne({_id: id});
     }
 

@@ -4,6 +4,7 @@ import { RoleModule } from './role/role.module';
 import { TagsModule } from './tags/tags.module';
 import { UserModule } from './user/user.module';
 import { ThemeModule } from './theme/theme.module';
+import { CommentModule } from './comment/comment.module';
 
 @Module({
   imports: [
@@ -11,7 +12,8 @@ import { ThemeModule } from './theme/theme.module';
     TagsModule,
     RoleModule,
     UserModule,
-    ThemeModule
+    ThemeModule,
+    CommentModule
   ]
 })
 export class AppModule {}

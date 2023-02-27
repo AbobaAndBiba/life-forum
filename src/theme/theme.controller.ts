@@ -15,6 +15,7 @@ import { RoleType } from "../role/role.type";
 import { ValidateMongooseIdPipe } from "src/pipes/validate-monoose-id.pipe";
 import { TagsRepository } from "src/tags/tags.repository";
 import { ThemeService } from "./theme.service";
+import { ObjectId } from "mongoose";
 
 @Controller("theme")
 export class ThemeController {
@@ -60,7 +61,7 @@ export class ThemeController {
 
     @UseGuards(IsLogedInGuard)
     @Patch('/update/:themeId')
-    async updateTheme(@Body() dto: UpdateThemeDto, @Param('themeId', ValidateMongooseIdPipe) themeId: string): Promise<Object> {
+    async updateTheme(@Body() dto: UpdateThemeDto, @Param('themeId', ValidateMongooseIdPipe) themeId: ObjectId): Promise<Object> {
         if(!themeId)
             throw new HttpException('Incorrect id type', 400);
         dto = updateThemeMapper.fromFrontToController(dto);
@@ -78,7 +79,7 @@ export class ThemeController {
 
     @UseGuards(IsLogedInGuard)
     @Delete('/delete/:themeId')
-    async deleteTheme(@Param('themeId') themeId: string, @Req() req: Request): Promise<Object> {
+    async deleteTheme(@Param('themeId') themeId: ObjectId, @Req() req: Request): Promise<Object> {
         const userReq = req.user;
         const user = await this.userRepository.getUserByEmail(userReq.email);
         if(!user)
