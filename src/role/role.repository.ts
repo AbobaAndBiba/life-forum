@@ -20,7 +20,7 @@ export class RoleRepository {
     }
 
     async getRoleById(id: ObjectId): Promise<RoleDocument>{
-        return this.role.findOne({id});
+        return this.role.findOne({_id: id});
     }
 
     async getRoleByName(roleName: string): Promise<RoleDocument>{

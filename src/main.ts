@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 declare global {
   namespace Express {
@@ -11,7 +12,7 @@ declare global {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {cors: true});
   app.useGlobalPipes(new ValidationPipe);
   await app.listen(process.env.PORT);
 }

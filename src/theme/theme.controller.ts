@@ -16,6 +16,7 @@ import { ValidateMongooseIdPipe } from "src/pipes/validate-monoose-id.pipe";
 import { TagsRepository } from "src/tags/tags.repository";
 import { ThemeService } from "./theme.service";
 import { ObjectId } from "mongoose";
+import { IsBannedGuard } from "src/guards/is-banned.guard";
 
 @Controller("theme")
 export class ThemeController {
@@ -39,6 +40,7 @@ export class ThemeController {
     }
 
     @UseGuards(IsLogedInGuard)
+    @UseGuards(IsBannedGuard)
     @Post('/create')
     async createTheme(@Body() dto: CreateThemeDto, @Req() req: Request) {
         dto = createThemeMapper.fromFrontToController(dto);
@@ -60,6 +62,7 @@ export class ThemeController {
     }
 
     @UseGuards(IsLogedInGuard)
+    @UseGuards(IsBannedGuard)
     @Patch('/update/:themeId')
     async updateTheme(@Body() dto: UpdateThemeDto, @Param('themeId', ValidateMongooseIdPipe) themeId: ObjectId): Promise<Object> {
         if(!themeId)
@@ -78,6 +81,7 @@ export class ThemeController {
     }
 
     @UseGuards(IsLogedInGuard)
+    @UseGuards(IsBannedGuard)
     @Delete('/delete/:themeId')
     async deleteTheme(@Param('themeId') themeId: ObjectId, @Req() req: Request): Promise<Object> {
         const userReq = req.user;

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpException, NotFoundException, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpException, NotFoundException, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { CreateRoleDto } from "./dto/create-role.dto";
 import { UpdateRoleDto } from "./dto/update-role.dto";
 import { createRoleMapper } from "./mappers/create-role.mapper";
@@ -6,6 +6,10 @@ import { updateRoleMapper } from "./mappers/update-role.mapper";
 import { RoleRepository } from "./role.repository";
 import { RoleService } from "./role.service";
 import { ObjectId } from "mongoose";
+import { RoleType } from "./role.type";
+import { Roles } from "../decorators/roles.decorator";
+import { RolesGuard } from "src/guards/roles.guard";
+import { IsBannedGuard } from "src/guards/is-banned.guard";
 
 @Controller("role")
 export class RoleController {
@@ -20,6 +24,9 @@ export class RoleController {
         return this.roleService.getRoleByName(roleName); 
     }
 
+    @Roles([RoleType.Admin])
+    @UseGuards(RolesGuard)
+    @UseGuards(IsBannedGuard)
     @Post("/create")
     async createRole(@Body() dto:CreateRoleDto): Promise<void>{
         dto = createRoleMapper.fromFrontToController(dto);
@@ -34,6 +41,9 @@ export class RoleController {
         return this.roleService.getAllRoles(); 
     }
 
+    @Roles([RoleType.Admin])
+    @UseGuards(RolesGuard)
+    @UseGuards(IsBannedGuard)
     @Delete(":name")
     async deleteRoleByName(@Param("name") roleName: string): Promise<{message}>{
         const role = await this.roleRepository.getRoleByName(roleName);
@@ -43,6 +53,9 @@ export class RoleController {
         return {message: "The role has been deleted successfully"};
     }
 
+    @Roles([RoleType.Admin])
+    @UseGuards(RolesGuard)
+    @UseGuards(IsBannedGuard)
     @Patch(":name")
     async updateRoleByName(@Param("name") roleName: string, @Body() dto:UpdateRoleDto): Promise<{message}>{
         dto = updateRoleMapper.fromFrontToController(dto);

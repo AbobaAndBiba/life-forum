@@ -9,6 +9,7 @@ import { CommentService } from "./comment.service";
 import { CreateCommentDto } from "./dto/create-comment.dto";
 import { createCommentMapper } from "./mapper/create-comment.mapper";
 import { getCommentsMapper } from "./mapper/get-comments.mapper";
+import { IsBannedGuard } from "src/guards/is-banned.guard";
 
 @Controller("comment")
 export class CommentController{
@@ -17,6 +18,7 @@ export class CommentController{
         private readonly themeRepository: ThemeRepository){}
     
     @UseGuards(IsLogedInGuard)
+    @UseGuards(IsBannedGuard)
     @Post('/create')
     async createComment(@Body() dto: CreateCommentDto, @Req() req: Request){
         dto = createCommentMapper.fromFrontToController(dto);
@@ -33,6 +35,7 @@ export class CommentController{
     }
 
     @UseGuards(IsLogedInGuard)
+    @UseGuards(IsBannedGuard)
     @Get('/get/:themeId')
     async getAllCommentsByTheme(
         @Query('limit', ToNumberPipe) limitQ: number = 9,
@@ -54,6 +57,7 @@ export class CommentController{
     }
 
     @UseGuards(IsLogedInGuard)
+    @UseGuards(IsBannedGuard)
     @Get('/get/user/:themeId')
     async getAllCommentsByThemeAndUser(
         @Query('limit', ToNumberPipe) limitQ: number = 9,
