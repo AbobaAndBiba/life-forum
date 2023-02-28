@@ -17,6 +17,12 @@ import { TagsRepository } from "src/tags/tags.repository";
 import { ThemeService } from "./theme.service";
 import { ObjectId } from "mongoose";
 import { IsBannedGuard } from "src/guards/is-banned.guard";
+import { CommentRepository } from "src/comment/comment.repository";
+import { AddTagsToThemeDto } from "./dto/add-tags-to-theme.dto";
+import { addTagsToThemeMapper } from "./mapper/add-tags-to-theme.mapper";
+import { RemoveTagsFromThemeDto } from "./dto/remove-tags-from-theme.dto";
+import { removeTagsFromThemeMapper } from "./mapper/remove-tags-from-theme.mapper";
+import { TagsService } from "src/tags/tags.service";
 
 @Controller("theme")
 export class ThemeController {
@@ -24,7 +30,9 @@ export class ThemeController {
                 private readonly themeService: ThemeService,
                 private readonly userRepository: UserRepository,
                 private readonly roleRepository: RoleRepository,
-                private readonly tagsRepository: TagsRepository) {}
+                private readonly tagsRepository: TagsRepository,
+                private readonly tagsService: TagsService,
+                private readonly commentRepository: CommentRepository) {}
 
     @Get('/get/all')
     async getAllThemes(@Query('limit', ToNumberPipe) limitQ: number = 9, @Query('offset', ToNumberPipe) offsetQ: number = 0): Promise<GetAllThemesFrontType> {
@@ -56,7 +64,7 @@ export class ThemeController {
         const tagsForCreation = this.themeService.prepareTagsForCreation(newTags);
         const newCreatedTags = await this.themeService.createTagsByNames(tagsForCreation);
         const existingTagsIds = this.themeService.getIdsFromTags(existingTags);
-        const newTheme = await this.themeRepository.createTheme({ ...dto, createdBy: user.id });
+        const newTheme = await this.themeRepository.createTheme({ ...dto, createdBy: user._id });
         await this.themeService.addTagsToTheme(newTheme._id, [...newCreatedTags, ...existingTagsIds]);
         return newTheme;
     }
@@ -76,8 +84,46 @@ export class ThemeController {
             if(checkTitleUnique)
                 throw new HttpException('The theme with this title is already in use', 400);
         }
-        await this.themeRepository.updateThemeById(theme.id, dto);
+        await this.themeRepository.updateThemeById(theme._id, dto);
         return { message: 'The theme has been updated successfully.' };
+    }
+
+    @UseGuards(IsLogedInGuard)
+    @UseGuards(IsBannedGuard)
+    @Post('/add-tags/:themeId')
+    async addTagsToTheme(@Body() dto: AddTagsToThemeDto, @Param('themeId', ValidateMongooseIdPipe) themeId: ObjectId) {
+        if(!themeId)
+            throw new HttpException('Incorrect id type', 400);
+        dto = addTagsToThemeMapper.fromFrontToController(dto);
+        const theme = await this.themeRepository.getThemeById(themeId);
+        if(!theme)
+            throw new NotFoundException('The theme was not found');
+        const existingTags = await this.tagsRepository.getTagsByNames(dto.tags);
+        const newTags = this.themeService.excludeExistingTags(existingTags, dto.tags);
+        const tagsForCreation = this.themeService.prepareTagsForCreation(newTags);
+        const newCreatedTags = await this.themeService.createTagsByNames(tagsForCreation);
+        const existingTagsIds = this.themeService.getIdsFromTags(existingTags);
+        await this.themeService.addTagsToTheme(theme._id, [...newCreatedTags, ...existingTagsIds]);
+        return { message: 'The tags has been added successfully.' };
+    }
+
+    @UseGuards(IsLogedInGuard)
+    @UseGuards(IsBannedGuard)
+    @Delete('/remove-tags/:themeId')
+    async removeTagsFromTheme(@Body() dto: RemoveTagsFromThemeDto, @Param('themeId', ValidateMongooseIdPipe) themeId: ObjectId) {
+        if(!themeId)
+            throw new HttpException('Incorrect id type', 400);
+        dto = removeTagsFromThemeMapper.fromFrontToController(dto);
+        const theme = await this.themeRepository.getThemeById(themeId);
+        if(!theme)
+            throw new NotFoundException('The theme was not found');
+        const existingTags = await this.tagsRepository.getTagsByNames(dto.tags);
+        const tagsIds = this.tagsService.getIdsFromTags(existingTags);
+        const themeTags = await this.themeRepository.getThemeTagsByThemeIdAndTagIds(theme._id, tagsIds);
+        const themeTagIds = this.themeService.getTagIdsFromThemTags(themeTags);
+        const themeTagsForDelete = this.themeService.prepareThemeTagsForDelete(themeTagIds);
+        await this.themeRepository.deleteThemeTags(themeTagsForDelete);
+        return { message: 'The tags from theme has been removed successfully.' };
     }
 
     @UseGuards(IsLogedInGuard)
@@ -94,9 +140,11 @@ export class ThemeController {
         const role = await this.roleRepository.getRoleById(user.roleId);
         if(!role)
             throw new NotFoundException("The role was not found");
-        if(theme.createdBy !== user.id && role.name !== RoleType.Admin)
+        if(theme.createdBy !== user._id && role.name !== RoleType.Admin)
             throw new HttpException("You don't have a permission to do this action", 403);
-        await this.themeRepository.deleteThemeById(theme.id);
+        await this.commentRepository.deleteCommentsByThemeId(theme._id);
+        await this.themeRepository.deleteThemeTagsByThemeId(theme._id);
+        await this.themeRepository.deleteThemeById(theme._id);
         return { message: 'The theme has been deleted successfully.' };
     }
 }

@@ -9,13 +9,15 @@ import { Roles } from "src/decorators/roles.decorator";
 import { RoleType } from "src/role/role.type";
 import { IsBannedGuard } from "src/guards/is-banned.guard";
 import { RolesGuard } from "src/guards/roles.guard";
+import { ThemeRepository } from "src/theme/theme.repository";
 
 @Controller("tags")
 export class TagsController {
     
     constructor(
         private readonly tagsService: TagsService,
-        private readonly tagsRepository: TagsRepository
+        private readonly tagsRepository: TagsRepository,
+        private readonly themeRepository: ThemeRepository,
     ) {}
     
     @Get(":name")
@@ -48,6 +50,7 @@ export class TagsController {
         const tag = await this.tagsRepository.getTagByName(tagName);
         if(!tag)
             throw new NotFoundException("Tag was not found");
+        await this.themeRepository.deleteThemeTagsByTagId(tag._id);
         await this.tagsService.deleteTagByName(tag.name);
         return {message: "The tag has been deleted successfully"};
     }

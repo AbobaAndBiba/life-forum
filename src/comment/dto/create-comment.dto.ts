@@ -1,4 +1,4 @@
-import { IsOptional, IsString, Length } from "class-validator";
+import { IsMongoId, IsNotEmpty, IsOptional, IsString, Length } from "class-validator";
 import { ObjectId } from "mongoose";
 
 export class CreateCommentDto{
@@ -6,6 +6,8 @@ export class CreateCommentDto{
     @Length(3, 1000)
     body: string;
 
+    @IsNotEmpty()
+    @IsMongoId()
     themeId: ObjectId;
 
     @IsOptional()

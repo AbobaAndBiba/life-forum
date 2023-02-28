@@ -14,11 +14,19 @@ export interface IBulkWriteTag {
     }
 }
 
-export interface IBulkWriteThemeTag {
+export interface IBulkWriteInsertOneThemeTag {
     insertOne: {
         document: {
             themeId: ObjectId;
             tagId: ObjectId;
+        }
+    }
+}
+
+export interface IBulkWriteDeleteOneThemeTag {
+    deleteOne: {
+        filter: {
+            _id: ObjectId;
         }
     }
 }

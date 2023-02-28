@@ -20,6 +20,8 @@ import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { MailTransporterService } from "src/mail-transporter/mail-transporter.service";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { resetPasswordMapper } from "./mappers/reset-password.mapper";
+import { banUserMapper } from "./mappers/ban-user.mapper";
+import { forgotPasswordMapper } from "./mappers/forgot-password.mapper";
 
 @Controller("user")
 export class UserController {
@@ -78,6 +80,7 @@ export class UserController {
     async banUser(@Body() dto: BanUserDto, @Req() req: Request, @Param('userId', ValidateMongooseIdPipe) userId: ObjectId) {
         if(!userId)
             throw new HttpException('Incorrect id type', 400);
+        dto = banUserMapper.fromFrontToController(dto);
         const userReq = req.user;
         const user = await this.userRepository.getUserByEmail(userReq.email);
         if(!user)
@@ -85,7 +88,7 @@ export class UserController {
         const banUser = await this.userRepository.getUserById(userId);
         if(!banUser)
             throw new NotFoundException('The user was not found.');
-        if(user.id === banUser.id)
+        if(user._id === banUser._id)
             throw new HttpException('You cannot ban yourself.', 400);
         const isBanned = await this.userService.isBanned(banUser._id);
         if(isBanned)
@@ -114,6 +117,7 @@ export class UserController {
 
     @Post('/forgot-password')
     async forgotPassword(@Body() dto: ForgotPasswordDto) {
+        dto = forgotPasswordMapper.fromFrontToController(dto);
         const user = await this.userRepository.getUserByEmail(dto.email);
         if(!user)
             throw new HttpException('The user was not found.', 404);

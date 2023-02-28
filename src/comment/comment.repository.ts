@@ -37,6 +37,10 @@ export class CommentRepository {
         await this.comment.deleteOne({_id: id});
     }
 
+    async deleteCommentsByThemeId(themeId: ObjectId){
+        await this.comment.deleteMany({themeId});
+    }
+
     async updateCommentById(id: ObjectId, dto: UpdateCommentDto){
         return this.comment.updateOne({_id: id},dto);
     }

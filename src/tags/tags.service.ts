@@ -1,8 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { CreateTagDto } from "./dto/create-tag.dto";
 import { UpdateTagDto } from "./dto/update-tag.dto";
-import { ITags } from "./schemas/tags.schema";
+import { ITags, TagsDocument } from "./schemas/tags.schema";
 import { TagsRepository } from "./tags.repository";
+import { ObjectId } from "mongoose";
 
 @Injectable()
 export class TagsService {
@@ -30,5 +31,11 @@ export class TagsService {
 
     async updateTagByName(tagName: string,dto: UpdateTagDto){
         return this.tagsRepository.updateTagByName(tagName,dto);
+    }
+
+    getIdsFromTags(tags: TagsDocument[]): ObjectId[] {
+        return tags.map(tag => {
+            return tag._id;
+        });
     }
 }

@@ -1,8 +1,8 @@
-import { IsDefined, IsNotEmpty, IsString } from "class-validator";
+import { IsOptional, IsString, Length } from "class-validator";
 
 export class UpdateCommentDto {
-    @IsNotEmpty()
-    @IsDefined()
+    @IsOptional()
     @IsString()
-    body: string;
+    @Length(3, 1000)
+    body?: string;
 }

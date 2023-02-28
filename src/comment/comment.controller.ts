@@ -1,4 +1,4 @@
-import {Body, Controller, Get, NotFoundException, Param, Post, Query, Req, UseGuards} from "@nestjs/common";
+import {Body, Controller, Delete, Get, HttpException, NotFoundException, Param, Patch, Post, Query, Req, UseGuards} from "@nestjs/common";
 import { Request } from "express";
 import { ObjectId } from "mongoose";
 import { IsLogedInGuard } from "src/guards/is-loged-in.guard";
@@ -10,12 +10,18 @@ import { CreateCommentDto } from "./dto/create-comment.dto";
 import { createCommentMapper } from "./mapper/create-comment.mapper";
 import { getCommentsMapper } from "./mapper/get-comments.mapper";
 import { IsBannedGuard } from "src/guards/is-banned.guard";
+import { ValidateMongooseIdPipe } from "src/pipes/validate-monoose-id.pipe";
+import { RoleRepository } from "src/role/role.repository";
+import { RoleType } from "src/role/role.type";
+import { UpdateCommentDto } from "./dto/update-comment.dto";
+import { updateCommentMapper } from "./mapper/update-comment.mapper";
 
 @Controller("comment")
 export class CommentController{
     constructor(private readonly commentService: CommentService,
-        private readonly userRepository: UserRepository,
-        private readonly themeRepository: ThemeRepository){}
+                private readonly userRepository: UserRepository,
+                private readonly themeRepository: ThemeRepository,
+                private readonly roleRepository: RoleRepository){}
     
     @UseGuards(IsLogedInGuard)
     @UseGuards(IsBannedGuard)
@@ -40,7 +46,9 @@ export class CommentController{
     async getAllCommentsByTheme(
         @Query('limit', ToNumberPipe) limitQ: number = 9,
         @Query('offset', ToNumberPipe) offsetQ: number = 0,
-        @Param('themeId') themeId: ObjectId){
+        @Param('themeId', ValidateMongooseIdPipe) themeId: ObjectId){
+        if(!themeId)
+            throw new HttpException('Invalid id type', 400);
         const { limit, offset } = getCommentsMapper.fromControllerToService(limitQ, offsetQ);
         const theme = await this.themeRepository.getThemeById(themeId);
         if(!theme){
@@ -62,9 +70,11 @@ export class CommentController{
     async getAllCommentsByThemeAndUser(
         @Query('limit', ToNumberPipe) limitQ: number = 9,
         @Query('offset', ToNumberPipe) offsetQ: number = 0, 
-        @Param('themeId') themeId: ObjectId,
+        @Param('themeId', ValidateMongooseIdPipe) themeId: ObjectId,
         @Req() req: Request
         ){
+        if(!themeId)
+            throw new HttpException('Invalid id type', 400);
         const { limit, offset } = getCommentsMapper.fromControllerToService(limitQ, offsetQ);
         const userReq = req.user;
         const user = await this.userRepository.getUserByEmail(userReq.email);
@@ -85,4 +95,39 @@ export class CommentController{
         };
     }
 
+    @UseGuards(IsLogedInGuard)
+    @UseGuards(IsBannedGuard)
+    @Patch('/update/:commentId')
+    async updateComment(@Body() dto: UpdateCommentDto, @Param('commentId', ValidateMongooseIdPipe) commentId: ObjectId) {
+        if(!commentId)
+            throw new HttpException('Invalid id type', 400);
+        dto = updateCommentMapper.fromFrontToController(dto);
+        const comment = await this.commentService.getCommentById(commentId);
+        if(!comment)
+            throw new NotFoundException('The comment was not found');
+        await this.commentService.updateCommentById(comment._id, dto);
+        return { message: 'The comment has been updated successfully.' };
+    }
+
+    @UseGuards(IsLogedInGuard)
+    @UseGuards(IsBannedGuard)
+    @Delete('/delete/:commentId')
+    async deleteComment(@Param('commentId', ValidateMongooseIdPipe) commentId: ObjectId, @Req() req: Request) {
+        if(!commentId)
+            throw new HttpException('Invalid id type', 400);
+        const userReq = req.user;
+        const user = await this.userRepository.getUserByEmail(userReq.email);
+        if(!user)
+            throw new NotFoundException('The user was not found.');
+        const comment = await this.commentService.getCommentById(commentId);
+        if(!comment)
+            throw new NotFoundException('The comment was not found');
+        const role = await this.roleRepository.getRoleById(user.roleId);
+        if(!role)
+            throw new NotFoundException("The role was not found");
+        if(comment.createdBy !== user._id && role.name !== RoleType.Admin)
+            throw new HttpException("You don't have a permission to do this action", 403);
+        await this.commentService.deleteCommentById(comment._id);
+        return { message: 'The comment has been deleted successfully.' };
+    }
 }

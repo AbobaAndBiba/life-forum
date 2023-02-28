@@ -24,7 +24,7 @@ export class TagsRepository {
         return this.tags.find();
     }
 
-    async getTagByName(tagName: string): Promise<ITags>{
+    async getTagByName(tagName: string): Promise<TagsDocument>{
         return this.tags.findOne({name: tagName});
     }
 

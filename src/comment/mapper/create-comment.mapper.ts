@@ -4,7 +4,7 @@ class CreateCommentMapper {
     fromFrontToController(dto: CreateCommentDto): CreateCommentDto{
         return {
             body:dto.body,
-            themeId:dto.themeId,
+            themeId: dto.themeId,
             createdBy: dto.createdBy
         }
     }
