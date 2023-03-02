@@ -24,6 +24,10 @@ export class TagsRepository {
         return this.tags.find();
     }
 
+    async getAllTagsFront(limit: number, offset: number): Promise<ITags[]>{
+        return this.tags.find().skip(offset).limit(limit);
+    }
+
     async getTagByName(tagName: string): Promise<TagsDocument>{
         return this.tags.findOne({name: tagName});
     }

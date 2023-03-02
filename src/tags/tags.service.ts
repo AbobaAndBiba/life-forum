@@ -21,6 +21,12 @@ export class TagsService {
         } );
     }
 
+    async getAllTagsFront(limit: number, offset: number): Promise<string[]>{
+        return (await (this.tagsRepository.getAllTagsFront(limit, offset))).map( tag => {
+            return tag.name;
+        } );
+    }
+
     async getTagByName(tagName: string): Promise<string>{
         return (await (this.tagsRepository.getTagByName(tagName))).name;
     }

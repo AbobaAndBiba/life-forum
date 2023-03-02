@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpException, NotFoundException, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpException, NotFoundException, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { CreateTagDto } from "./dto/create-tag.dto";
 import { UpdateTagDto } from "./dto/update-tag.dto";
 import { createTagMapper } from "./mappers/create-tag.mapper";
@@ -10,6 +10,8 @@ import { RoleType } from "src/role/role.type";
 import { IsBannedGuard } from "src/guards/is-banned.guard";
 import { RolesGuard } from "src/guards/roles.guard";
 import { ThemeRepository } from "src/theme/theme.repository";
+import { ToNumberPipe } from "src/pipes/to-number.pipe";
+import { getTagsMapper } from "./mappers/get-tags.mapper";
 
 @Controller("tags")
 export class TagsController {
@@ -38,8 +40,16 @@ export class TagsController {
     }
 
     @Get("/get/all")
-    async getTag(){
-        return this.tagsService.getAllTags(); 
+    async getAllTags(@Query('limit', ToNumberPipe) limitQ: number = 9, @Query('offset', ToNumberPipe) offsetQ: number = 0){
+        const { limit, offset } = getTagsMapper.fromControllerToService(limitQ, offsetQ);
+        const tags = await this.tagsService.getAllTagsFront(limit, offset);
+        const total = (await this.tagsService.getAllTags()).length;
+        return {
+            total,
+            limit,
+            offset,
+            tags
+        };
     }
 
     @Roles([RoleType.Admin])
