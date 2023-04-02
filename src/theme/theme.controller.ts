@@ -34,16 +34,6 @@ export class ThemeController {
                 private readonly tagsService: TagsService,
                 private readonly commentRepository: CommentRepository) {}
 
-    @Get('/get/:themeId')
-    async getThemeById(@Param('themeId', ValidateMongooseIdPipe) themeId: string) {
-        if(!themeId)
-            throw new HttpException('Incorrect id type', 400);
-        const theme = await this.themeService.getThemeByIdFront(themeId);
-        if(!theme)
-            throw new NotFoundException('The theme was not found');
-        return theme;
-    }
-
     @Get('/get/all')
     async getAllThemes(@Query('limit', ToNumberPipe) limitQ: number = 9, @Query('offset', ToNumberPipe) offsetQ: number = 0): Promise<GetAllThemesFrontType> {
         const { limit, offset } = getThemesMapper.fromControllerToService(limitQ, offsetQ);
@@ -55,6 +45,16 @@ export class ThemeController {
             offset,
             themes
         };
+    }
+
+    @Get('/get/:themeId')
+    async getThemeById(@Param('themeId', ValidateMongooseIdPipe) themeId: string) {
+        if(!themeId)
+            throw new HttpException('Incorrect id type', 400);
+        const theme = await this.themeService.getThemeByIdFront(themeId);
+        if(!theme)
+            throw new NotFoundException('The theme was not found');
+        return theme;
     }
 
     @UseGuards(IsLogedInGuard)
