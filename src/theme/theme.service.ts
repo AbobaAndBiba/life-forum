@@ -76,4 +76,8 @@ export class ThemeService {
         });
         return this.themeRepository.createThemeTags(bulkData);
     }
+
+    async getThemeByIdFront(themeId: string) {
+        return (await this.themeRepository.getThemeByIdFront(themeId))[0];
+    }
 }
