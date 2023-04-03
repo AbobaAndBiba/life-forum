@@ -22,6 +22,8 @@ import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { resetPasswordMapper } from "./mappers/reset-password.mapper";
 import { banUserMapper } from "./mappers/ban-user.mapper";
 import { forgotPasswordMapper } from "./mappers/forgot-password.mapper";
+import { authMapper } from "./mappers/auth.mapper";
+import { getUserByLoginMapper } from "./mappers/get-user-by-login.mapper";
 
 @Controller("user")
 export class UserController {
@@ -39,7 +41,15 @@ export class UserController {
         if(!user)
             throw new NotFoundException('The user was not found.');
         const token = this.userService.generateToken(user);
-        return { token };
+        return authMapper.fromControllerToFront(token, user);
+    }
+
+    @Get('/:login')
+    async getUserByLogin(@Param('login') login: string) {
+        const user = await this.userRepository.getUserByLogin(login);
+        if(!user)
+            throw new NotFoundException('The user was not found.');
+        return getUserByLoginMapper.fromControllerToFront(user);
     }
 
     @Post('/register')
@@ -54,7 +64,7 @@ export class UserController {
         const hashPassword = await bcryptjs.hash(dto.password!, 5);
         const newUser = await this.userRepository.createUser({...dto, password: hashPassword, roleId: userRole.id})
         const token = this.userService.generateToken(newUser);
-        return { token };
+        return createUserMapper.fromControllerToFront(token, newUser);
     }
 
     @Post('/login')
@@ -70,7 +80,7 @@ export class UserController {
         if(isBanned)
             throw new HttpException('You are banned', 403);
         const token = this.userService.generateToken(user);
-        return { token };
+        return loginMapper.fromControllerToFront(token, user);
     }
 
     @Roles([RoleType.Admin])

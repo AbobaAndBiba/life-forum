@@ -34,6 +34,10 @@ export class UserRepository {
         return this.user.findOne({ email });
     }
 
+    async getUserByLogin(login: string): Promise<UserDocument>{
+        return this.user.findOne({ login });
+    }
+
     async createBan(data: BanUserDto): Promise<BanDocument> {
         return this.ban.create(data);
     }

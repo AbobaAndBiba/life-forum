@@ -12,3 +12,16 @@ export interface ICreateResetPassword {
     userId: ObjectId;
     token: string;
 }
+
+export interface IUserFront {
+    user: {
+        login: string;
+    }
+}
+
+export interface ITokenAndUserFront {
+    token: string;
+    user: {
+        login: string;
+    }
+}
