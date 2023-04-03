@@ -4,9 +4,7 @@ import { IUserFront } from "../user.interfaces";
 class GetUserByLoginMapper {
     fromControllerToFront(user: UserDocument): IUserFront {
         return {
-            user: {
-                login: user.login
-            }
+            login: user.login
         }
     }
 }

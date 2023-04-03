@@ -14,9 +14,7 @@ export interface ICreateResetPassword {
 }
 
 export interface IUserFront {
-    user: {
-        login: string;
-    }
+    login: string;
 }
 
 export interface ITokenAndUserFront {
