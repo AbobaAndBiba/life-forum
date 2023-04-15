@@ -130,6 +130,49 @@ export class ThemeRepository {
               'commentCount': 1, 
               'lastComment': 1
             }
+          }, {
+            '$lookup': {
+              'from': 'users', 
+              'localField': 'lastComment.createdBy', 
+              'foreignField': '_id', 
+              'as': 'user'
+            }
+          }, {
+            '$unwind': {
+              'path': '$user', 
+              'preserveNullAndEmptyArrays': true
+            }
+          }, {
+            '$project': {
+              '_id': 1, 
+              'title': 1, 
+              'body': 1, 
+              'createdBy': 1, 
+              'createdAt': 1, 
+              'updatedAt': 1, 
+              'tags': 1, 
+              'commentCount': 1, 
+              'lastComment': {
+                '$cond': {
+                  'if': {
+                    '$eq': [
+                      {
+                        '$type': '$user'
+                      }, 'missing'
+                    ]
+                  }, 
+                  'then': '$empty', 
+                  'else': {
+                    '_id': '$lastComment._id', 
+                    'body': '$lastComment.body', 
+                    'themeId': '$lastComment.themeId', 
+                    'createdBy': '$user.login', 
+                    'createdAt': '$lastComment.createdAt', 
+                    'updatedAt': '$lastComment.updatedAt'
+                  }
+                }
+              }
+            }
           }
         ]).skip(offset).limit(limit);
     }
