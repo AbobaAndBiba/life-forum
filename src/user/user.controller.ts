@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, NotFoundException, Param, Patch, Post, Req, UseGuards} from "@nestjs/common";
+import { Body, Controller, Get, HttpException, NotFoundException, Param, Patch, Post, Req, UseGuards, Query} from "@nestjs/common";
 import { UserRepository } from "./user.repository";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { createUserMapper } from "./mappers/create-user.mapper.dto";
@@ -24,6 +24,8 @@ import { banUserMapper } from "./mappers/ban-user.mapper";
 import { forgotPasswordMapper } from "./mappers/forgot-password.mapper";
 import { authMapper } from "./mappers/auth.mapper";
 import { getUserByLoginMapper } from "./mappers/get-user-by-login.mapper";
+import { ToNumberPipe } from "../pipes/to-number.pipe";
+import { getUsersMapper } from "./mappers/get-users.mapper";
 
 @Controller("user")
 export class UserController {
@@ -31,6 +33,19 @@ export class UserController {
                 private readonly userService: UserService,
                 private readonly roleService: RoleService,
                 private readonly mailTransporterService: MailTransporterService) {}
+
+    @Get('/get/all')
+    async getAllUsers(@Query('limit', ToNumberPipe) limitQ: number = 9, @Query('offset', ToNumberPipe) offsetQ: number = 0) {
+        const { limit, offset } = getUsersMapper.fromControllerToService(limitQ, offsetQ);
+        const users = await this.userRepository.getAllUsersFront(limit, offset);
+        const total = (await this.userRepository.getAllUsers()).length;
+        return {
+            total,
+            limit,
+            offset,
+            users
+        };
+    }
 
     @UseGuards(IsLogedInGuard)
     @UseGuards(IsBannedGuard)
@@ -64,7 +79,7 @@ export class UserController {
         const hashPassword = await bcryptjs.hash(dto.password!, 5);
         const newUser = await this.userRepository.createUser({...dto, password: hashPassword, roleId: userRole.id})
         const token = this.userService.generateToken(newUser);
-        return createUserMapper.fromControllerToFront(token, newUser);
+        return createUserMapper.fromControllerToFront(token, {...newUser, role: userRole});
     }
 
     @Post('/login')
@@ -136,7 +151,7 @@ export class UserController {
             const token = this.userService.generateResetPasswordToken();
             await this.userRepository.createResetPassword({token, userId: user._id});
         }
-        const link = this.userService.createResetPasswordLink(user._id, resetPassword.token);
+        const link = this.userService.createResetPasswordLink(user._id.toString(), resetPassword.token);
         await this.mailTransporterService.sendEmail(user.email, 'Reset password', link);
         return { message: 'To complete your reset password you have to move on the link in your email.' };
     }

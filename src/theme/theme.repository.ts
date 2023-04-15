@@ -21,92 +21,116 @@ export class ThemeRepository {
 
     async getAllThemesFront(limit: number, offset: number): Promise<ITheme[]> {
         return this.theme.aggregate([
-            {
-              '$lookup': {
-                'from': 'themetags', 
-                'localField': '_id', 
-                'foreignField': 'themeId', 
-                'as': 'themetags'
+          {
+            '$lookup': {
+              'from': 'themetags', 
+              'localField': '_id', 
+              'foreignField': 'themeId', 
+              'as': 'themetags'
+            }
+          }, {
+            '$unwind': {
+              'path': '$themetags', 
+              'preserveNullAndEmptyArrays': true
+            }
+          }, {
+            '$lookup': {
+              'from': 'tags', 
+              'localField': 'themetags.tagId', 
+              'foreignField': '_id', 
+              'as': 'tag'
+            }
+          }, {
+            '$unwind': {
+              'path': '$tag', 
+              'preserveNullAndEmptyArrays': true
+            }
+          }, {
+            '$unset': 'themetags'
+          }, {
+            '$group': {
+              '_id': '$_id', 
+              'title': {
+                '$first': '$title'
+              }, 
+              'body': {
+                '$first': '$body'
+              }, 
+              'createdBy': {
+                '$first': '$createdBy'
+              }, 
+              'createdAt': {
+                '$first': '$createdAt'
+              }, 
+              'updatedAt': {
+                '$first': '$updatedAt'
+              }, 
+              'tags': {
+                '$push': '$tag'
               }
-            }, {
-              '$unwind': {
-                'path': '$themetags', 
-                'preserveNullAndEmptyArrays': true
+            }
+          }, {
+            '$lookup': {
+              'from': 'comments', 
+              'localField': '_id', 
+              'foreignField': 'themeId', 
+              'as': 'comments'
+            }
+          }, {
+            '$addFields': {
+              'commentCount': {
+                '$size': '$comments'
               }
-            }, {
-              '$lookup': {
-                'from': 'tags', 
-                'localField': 'themetags.tagId', 
-                'foreignField': '_id', 
-                'as': 'tag'
-              }
-            }, {
-              '$unwind': {
-                'path': '$tag', 
-                'preserveNullAndEmptyArrays': true
-              }
-            }, {
-              '$unset': 'themetags'
-            }, {
-              '$group': {
-                '_id': '$_id', 
-                'title': {
-                  '$first': '$title'
-                }, 
-                'body': {
-                  '$first': '$body'
-                }, 
-                'createdBy': {
-                  '$first': '$createdBy'
-                }, 
-                'createdAt': {
-                  '$first': '$createdAt'
-                }, 
-                'updatedAt': {
-                  '$first': '$updatedAt'
-                }, 
-                'tags': {
-                  '$push': '$tag'
-                }
-              }
-            }, {
-              '$lookup': {
-                'from': 'comments', 
-                'localField': '_id', 
-                'foreignField': 'themeId', 
-                'as': 'comments'
-              }
-            }, {
-              '$addFields': {
-                'commentCount': {
-                  '$size': '$comments'
-                }
-              }
-            }, {
-              '$addFields': {
-                'comments': {
-                  '$filter': {
-                    'input': '$comments', 
-                    'as': 'comment', 
-                    'cond': {
-                      '$eq': [
-                        '$$comment.createdAt', {
-                          '$max': '$comments.createdAt'
-                        }
-                      ]
-                    }
+            }
+          }, {
+            '$addFields': {
+              'comments': {
+                '$filter': {
+                  'input': '$comments', 
+                  'as': 'comment', 
+                  'cond': {
+                    '$eq': [
+                      '$$comment.createdAt', {
+                        '$max': '$comments.createdAt'
+                      }
+                    ]
                   }
                 }
               }
-            }, {
-              '$addFields': {
-                'lastComment': {
-                  '$last': '$comments'
-                }
-              }
-            }, {
-              '$unset': 'comments'
             }
+          }, {
+            '$addFields': {
+              'lastComment': {
+                '$last': '$comments'
+              }
+            }
+          }, {
+            '$unset': 'comments'
+          }, {
+            '$lookup': {
+              'from': 'users', 
+              'localField': 'createdBy', 
+              'foreignField': '_id', 
+              'as': 'user'
+            }
+          }, {
+            '$unwind': {
+              'path': '$user', 
+              'preserveNullAndEmptyArrays': true
+            }
+          }, {
+            '$project': {
+              '_id': 1, 
+              'title': 1, 
+              'body': 1, 
+              'createdBy': '$user.login', 
+              'createdAt': 1, 
+              'updatedAt': 1, 
+              'tags': 1, 
+              'commentCount': 1, 
+              'lastComment': 1
+            }
+          }
         ]).skip(offset).limit(limit);
     }
 
@@ -115,7 +139,8 @@ export class ThemeRepository {
     }
 
     async getThemeByIdFront(id: string): Promise<any> {
-        return this.theme.aggregate([{
+        return this.theme.aggregate([
+            {
                 $match: {
                     _id: new mongoose.Types.ObjectId(id),
                 }
@@ -167,6 +192,105 @@ export class ThemeRepository {
             }, {
               '$unset': 'user'
             }, {
+              '$lookup': {
+                'from': 'roles', 
+                'localField': 'comment.user.roleId', 
+                'foreignField': '_id', 
+                'as': 'role'
+              }
+            }, {
+              '$unwind': {
+                'path': '$role', 
+                'preserveNullAndEmptyArrays': true
+              }
+            }, {
+              '$addFields': {
+                'comment.user': {
+                  '$mergeObjects': [
+                    '$comment.user', {
+                      'role': '$role.name'
+                    }
+                  ]
+                }
+              }
+            }, {
+              '$lookup': {
+                'from': 'bans', 
+                'localField': 'comment.user._id', 
+                'foreignField': 'userId', 
+                'as': 'comment.user.bans'
+              }
+            }, {
+              '$addFields': {
+                'comment.user.lastBan': {
+                  '$ifNull': [
+                    {
+                      '$arrayElemAt': [
+                        '$comment.user.bans', {
+                          '$subtract': [
+                            {
+                              '$size': '$comment.user.bans'
+                            }, 1
+                          ]
+                        }
+                      ]
+                    }, '$empty'
+                  ]
+                }
+              }
+            }, {
+              '$addFields': {
+                'comment.user.isBanned': {
+                  '$cond': {
+                    'if': {
+                      '$eq': [
+                        {
+                          '$type': '$comment.user.lastBan'
+                        }, 'object'
+                      ]
+                    }, 
+                    'then': {
+                      '$cond': {
+                        'if': {
+                          '$eq': [
+                            {
+                              '$type': '$comment.user.lastBan.unbannedAt'
+                            }, 'date'
+                          ]
+                        }, 
+                        'then': false, 
+                        'else': true
+                      }
+                    }, 
+                    'else': false
+                  }
+                }
+              }
+            }, {
+              '$project': {
+                '_id': 1, 
+                'title': 1, 
+                'body': 1, 
+                'createdBy': 1, 
+                'createdAt': 1, 
+                'updatedAt': 1, 
+                'comment': {
+                  '$cond': {
+                    'if': {
+                      '$eq': [
+                        {
+                          '$type': '$comment._id'
+                        }, 'missing'
+                      ]
+                    }, 
+                    'then': '$empty', 
+                    'else': '$comment'
+                  }
+                }
+              }
+            }, {
+              '$unset': 'comment.user.lastBan'
+            }, {
               '$group': {
                 '_id': '$_id', 
                 'title': {
@@ -191,7 +315,10 @@ export class ThemeRepository {
             }, {
               '$project': {
                 'comments.user.password': 0, 
-                'comments.user.roleId': 0
+                'comments.user.roleId': 0, 
+                'comments.user.email': 0, 
+                'comments.user._id': 0, 
+                'comments.user.bans': 0
               }
             }, {
               '$addFields': {

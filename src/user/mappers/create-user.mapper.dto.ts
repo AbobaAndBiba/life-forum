@@ -1,6 +1,5 @@
 import { CreateUserDto } from "../dto/create-user.dto";
-import { UserDocument } from "../schemas/user.schema";
-import { ITokenAndUserFront } from "../user.interfaces";
+import { ITokenAndUserFront, IUserWithRole } from "../user.interfaces";
 
 class CreateUserMapper {
     fromFrontToController(dto: CreateUserDto): CreateUserDto{
@@ -12,11 +11,12 @@ class CreateUserMapper {
         }
     }
 
-    fromControllerToFront(token: string, user: UserDocument): ITokenAndUserFront {
+    fromControllerToFront(token: string, user: IUserWithRole): ITokenAndUserFront {
         return {
             token,
             user: {
-                login: user.login
+                login: user.login,
+                role: user.role.name
             }
         }
     }

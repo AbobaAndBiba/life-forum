@@ -1,10 +1,10 @@
-import { UserDocument } from "../schemas/user.schema";
-import { IUserFront } from "../user.interfaces";
+import { IUserWithRole, IUserFront } from "../user.interfaces";
 
 class GetUserByLoginMapper {
-    fromControllerToFront(user: UserDocument): IUserFront {
+    fromControllerToFront(user: IUserWithRole): IUserFront {
         return {
-            login: user.login
+            login: user.login,
+            role: user.role.name
         }
     }
 }

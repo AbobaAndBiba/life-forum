@@ -5,7 +5,7 @@ import { IUser, User, UserDocument } from "./schemas/user.schema";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { BanUserDto } from "./dto/ban-user.dto";
 import { Ban, BanDocument } from "./schemas/ban.schema";
-import { ICreateResetPassword, IUpdateBan, IUpdateUser } from "./user.interfaces";
+import { ICreateResetPassword, IUpdateBan, IUpdateUser, IUserWithRole, IUserFront } from "./user.interfaces";
 import { ResetPassword, ResetPasswordDocument } from "./schemas/reset-password.schema";
 
 @Injectable()
@@ -22,20 +22,83 @@ export class UserRepository {
         return this.user.findById(userId);
     }
 
-    async getAllUser(): Promise<IUser[]>{
+    async getAllUsers(): Promise<IUser[]>{
         return this.user.find();
+    }
+
+    async getAllUsersFront(limit: number, offset: number): Promise<IUserFront[]>{
+        return this.user.aggregate(
+            [
+                {
+                  '$lookup': {
+                    'from': 'roles', 
+                    'localField': 'roleId', 
+                    'foreignField': '_id', 
+                    'as': 'role'
+                  }
+                }, {
+                  '$unwind': {
+                    'path': '$role'
+                  }
+                }, {
+                  '$project': {
+                    'login': 1, 
+                    'role': '$role.name'
+                  }
+                },
+                {
+                  '$unset': '_id'
+                }
+              ]
+        ).skip(offset).limit(limit);
     }
 
     async updateUserById(userId: ObjectId, data: IUpdateUser) {
         return this.user.updateOne({_id: userId}, data);
     }
 
-    async getUserByEmail(email: string): Promise<UserDocument>{
-        return this.user.findOne({ email });
+    async getUserByEmail(email: string): Promise<IUserWithRole>{
+        return (await this.user.aggregate([
+              {
+                '$match': {
+                  'email': email
+                }
+              },
+              {
+                '$lookup': {
+                  'from': 'roles', 
+                  'localField': 'roleId', 
+                  'foreignField': '_id', 
+                  'as': 'role'
+                }
+              }, {
+                '$unwind': {
+                  'path': '$role'
+                }
+              }
+        ]))[0];
     }
 
-    async getUserByLogin(login: string): Promise<UserDocument>{
-        return this.user.findOne({ login });
+    async getUserByLogin(login: string): Promise<IUserWithRole>{
+        return (await this.user.aggregate([
+            {
+                '$match': {
+                    'login': login
+                }
+            },
+            {
+                '$lookup': {
+                  'from': 'roles', 
+                  'localField': 'roleId', 
+                  'foreignField': '_id', 
+                  'as': 'role'
+                }
+              }, {
+                '$unwind': {
+                  'path': '$role'
+                }
+              }
+        ]))[0];
     }
 
     async createBan(data: BanUserDto): Promise<BanDocument> {
